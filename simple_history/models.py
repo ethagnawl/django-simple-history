@@ -145,7 +145,8 @@ class HistoricalRecords:
         self.no_db_index = no_db_index
 
         if included_fields_:
-            self.included_fields_ = included_fields_
+            # TODO: How can we dynamically get the object's PK?
+            self.included_fields_ = list(set(["id"]) | set(included_fields_))
         else:
             self.included_fields_ = None
 

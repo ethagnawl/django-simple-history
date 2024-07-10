@@ -20,6 +20,8 @@ from ..models import (
     PollWithCustomManager,
     PollWithExcludeFields,
     PollWithIncludeFields,
+    SomeIncludeSpecificBar,
+    SomeFooWithIncludeFieldsAndFk,
     Restaurant,
 )
 
@@ -200,6 +202,8 @@ class TestPopulateHistory(TestCase):
             place="Only my history is tracked", pub_date=datetime.now()
         )
         PollWithIncludeFields.history.all().delete()
+        # TODO: What is this supposed to be testing?
+        # Is this new test case actually verifying anything useful?
         management.call_command(
             self.command_name,
             "tests.pollwithincludefields",
@@ -210,6 +214,18 @@ class TestPopulateHistory(TestCase):
         initial_history_record = PollWithIncludeFields.history.all()[0]
         self.assertEqual(initial_history_record.place, poll.place)
         self.assertEqual(initial_history_record.__dict__.get("pub_date"), None)
+
+    def test_included_fields_with_fk(self):
+        # TODO: Should the test behavior be included somewhere else and run via
+        # call_command?
+        old_bar = SomeIncludeSpecificBar.objects.create(qux="old")
+        new_bar = SomeIncludeSpecificBar.objects.create(qux="new")
+        poll = SomeFooWithIncludeFieldsAndFk.objects.create(some_bar=old_bar)
+        poll.some_bar = new_bar
+        poll.save()
+        history = poll.history.first()
+        self.assertEqual(history.some_bar, new_bar)
+        self.assertEqual(history.prev_record.some_bar, old_bar)
 
 
 class TestCleanDuplicateHistory(TestCase):
@@ -509,7 +525,6 @@ class TestCleanDuplicateHistory(TestCase):
             self.command_name,
             auto=True,
             included_fields_=(
-                "id",
                 "question",
             ),
             stdout=out,

@@ -43,12 +43,29 @@ class PollWithUniqueQuestion(models.Model):
     history = HistoricalRecords()
 
 
+class SomeIncludeSpecificBar(models.Model):
+    """
+    TODO: Better names but this avoids collisions with existing Bar model
+    """
+
+    qux = models.CharField(max_length=10)
+
+
+class SomeFooWithIncludeFieldsAndFk(models.Model):
+    """
+    TODO: Better names but this avoids collisions with existing Bar model
+    """
+
+    some_bar = models.ForeignKey(SomeIncludeSpecificBar, on_delete=models.CASCADE)
+    history = HistoricalRecords(included_fields_=["some_bar"])
+
+
 class PollWithIncludeFields(models.Model):
     question = models.CharField(max_length=200)
     pub_date = models.DateTimeField("date published")
     place = models.TextField(null=True)
 
-    history = HistoricalRecords(included_fields_=["id", "place"])
+    history = HistoricalRecords(included_fields_=["place"])
 
 
 class PollWithExcludeFields(models.Model):
