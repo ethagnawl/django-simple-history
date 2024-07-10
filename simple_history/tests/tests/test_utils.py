@@ -19,6 +19,7 @@ from simple_history.tests.models import (
     PollChildRestaurantWithManyToMany,
     PollWithAlternativeManager,
     PollWithExcludeFields,
+    PollWithIncludeFields,
     PollWithHistoricalSessionAttr,
     PollWithManyToMany,
     PollWithManyToManyCustomHistoryID,

@@ -36,6 +36,12 @@ class Command(populate_history.Command):
             help="List of fields to be excluded from the diff_against check",
         )
         parser.add_argument(
+            "--included_fields_",
+            nargs="+",
+            help="List of fields to be exclusively used in the diff_against check",
+        )
+
+        parser.add_argument(
             "--base-manager",
             action="store_true",
             default=False,
@@ -47,6 +53,7 @@ class Command(populate_history.Command):
     def handle(self, *args, **options):
         self.verbosity = options["verbosity"]
         self.excluded_fields = options.get("excluded_fields")
+        self.included_fields_ = options.get("included_fields_")
         self.base_manager = options.get("base_manager")
 
         to_process = set()
@@ -127,7 +134,17 @@ class Command(populate_history.Command):
             self.stdout.write(message)
 
     def _check_and_delete(self, entry1, entry2, dry_run=True):
-        delta = entry1.diff_against(entry2, excluded_fields=self.excluded_fields)
+        # NOTE: The included_fields kwarg already existing on the diff_against function
+        # but AFAICT was not being used. Passing it here _seems_ to work in the most
+        # basic use case outlined in test_auto_cleanup_with_included_fields but this
+        # needs more thought and the logic in diff_against may need to change to ensure
+        # that these values are being used as expected -- specifically when values are
+        # provided for included and excluded.
+        delta = entry1.diff_against(
+            entry2,
+            excluded_fields=self.excluded_fields,
+            included_fields=self.included_fields_,
+        )
         if not delta.changed_fields:
             if not dry_run:
                 entry1.delete()

@@ -95,6 +95,7 @@ class HistoricalRecords:
         table_name=None,
         inherit=False,
         excluded_fields=None,
+        included_fields_=None,
         history_id_field=None,
         history_change_reason_field=None,
         user_model=None,
@@ -142,6 +143,11 @@ class HistoricalRecords:
         if isinstance(no_db_index, str):
             no_db_index = [no_db_index]
         self.no_db_index = no_db_index
+
+        if included_fields_:
+            self.included_fields_ = included_fields_
+        else:
+            self.included_fields_ = None
 
         if excluded_fields is None:
             excluded_fields = []
@@ -328,9 +334,15 @@ class HistoricalRecords:
 
     def fields_included(self, model):
         fields = []
-        for field in model._meta.fields:
-            if field.name not in self.excluded_fields:
-                fields.append(field)
+
+        if self.included_fields_:
+            for field in model._meta.fields:
+                if field.name in self.included_fields_:
+                    fields.append(field)
+        else:
+            for field in model._meta.fields:
+                if field.name not in self.excluded_fields:
+                    fields.append(field)
         return fields
 
     def field_excluded_kwargs(self, field):
@@ -346,6 +358,7 @@ class HistoricalRecords:
         """
         fields = {}
         for field in self.fields_included(model):
+            # import code; code.interact(local=dict(globals(), **locals())) # noqa
             field = copy.copy(field)
             field.remote_field = copy.copy(field.remote_field)
             if isinstance(field, OrderWrt):

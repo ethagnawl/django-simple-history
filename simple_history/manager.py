@@ -165,6 +165,7 @@ class HistoryManager(models.Manager):
                 tmp.append(field.name + "_id")
             else:
                 tmp.append(field.name)
+
         fields = tuple(tmp)
         try:
             values = self.get_queryset().values(*fields)[0]

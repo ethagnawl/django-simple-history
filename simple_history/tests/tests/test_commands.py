@@ -19,6 +19,7 @@ from ..models import (
     Poll,
     PollWithCustomManager,
     PollWithExcludeFields,
+    PollWithIncludeFields,
     Restaurant,
 )
 
@@ -193,6 +194,22 @@ class TestPopulateHistory(TestCase):
         )
         initial_history_record = PollWithExcludeFields.history.all()[0]
         self.assertEqual(initial_history_record.question, poll.question)
+
+    def test_included_fields(self):
+        poll = PollWithIncludeFields.objects.create(
+            place="Only my history is tracked", pub_date=datetime.now()
+        )
+        PollWithIncludeFields.history.all().delete()
+        management.call_command(
+            self.command_name,
+            "tests.pollwithincludefields",
+            auto=True,
+            stdout=StringIO(),
+            stderr=StringIO(),
+        )
+        initial_history_record = PollWithIncludeFields.history.all()[0]
+        self.assertEqual(initial_history_record.place, poll.place)
+        self.assertEqual(initial_history_record.__dict__.get("pub_date"), None)
 
 
 class TestCleanDuplicateHistory(TestCase):
@@ -478,6 +495,51 @@ class TestCleanDuplicateHistory(TestCase):
             "<class 'simple_history.tests.models.PollWithExcludeFields'>\n",
         )
         self.assertEqual(PollWithExcludeFields.history.all().count(), 1)
+
+    def test_auto_cleanup_with_included_fields(self):
+        p = Poll.objects.create(
+            question="Will this be deleted?", pub_date=datetime.now()
+        )
+        self.assertEqual(Poll.history.all().count(), 1)
+        p.pub_date = p.pub_date + timedelta(days=1)
+        p.save()
+        self.assertEqual(Poll.history.all().count(), 2)
+        out = StringIO()
+        management.call_command(
+            self.command_name,
+            auto=True,
+            included_fields_=(
+                "id",
+                "question",
+            ),
+            stdout=out,
+            stderr=StringIO(),
+        )
+        self.assertEqual(
+            out.getvalue(),
+            "Removed 1 historical records for "
+            "<class 'simple_history.tests.models.Poll'>\n",
+        )
+        self.assertEqual(Poll.history.all().count(), 1)
+
+    def test_auto_cleanup_for_model_with_included_fields(self):
+        p = PollWithIncludeFields.objects.create(
+            place="Will this be deleted?", pub_date=datetime.now()
+        )
+        self.assertEqual(PollWithIncludeFields.history.all().count(), 1)
+        p.pub_date = p.pub_date + timedelta(days=1)
+        p.save()
+        self.assertEqual(PollWithIncludeFields.history.all().count(), 2)
+        out = StringIO()
+        management.call_command(
+            self.command_name, auto=True, stdout=out, stderr=StringIO()
+        )
+        self.assertEqual(
+            out.getvalue(),
+            "Removed 1 historical records for "
+            "<class 'simple_history.tests.models.PollWithIncludeFields'>\n",
+        )
+        self.assertEqual(PollWithIncludeFields.history.all().count(), 1)
 
 
 class TestCleanOldHistory(TestCase):
