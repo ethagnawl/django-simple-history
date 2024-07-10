@@ -359,7 +359,6 @@ class HistoricalRecords:
         """
         fields = {}
         for field in self.fields_included(model):
-            # import code; code.interact(local=dict(globals(), **locals())) # noqa
             field = copy.copy(field)
             field.remote_field = copy.copy(field.remote_field)
             if isinstance(field, OrderWrt):
